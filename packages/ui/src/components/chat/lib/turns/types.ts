@@ -131,6 +131,7 @@ export interface TurnGroupingContext {
     /** Model variant ("thinking" etc.) the turn ran with, read off its assistant messages. */
     assistantVariant?: string;
     isWorking: boolean;
+    activitySettled: boolean;
     isGroupExpanded?: boolean;
     toggleGroup?: () => void;
 }

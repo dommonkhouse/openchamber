@@ -9,7 +9,7 @@ import { filterVisibleParts, isEmptyTextPart } from './message/partUtils';
 import { areOptionalRenderRelevantMessagesEqual, areRelevantTurnGroupingContextsEqual, areRenderRelevantMessagesEqual } from './message/renderCompare';
 import TurnItem from './components/TurnItem';
 import { LiveTurnActivity } from './components/LiveTurnActivity';
-import { getTurnsWithLaterAssistant, hasLiveActivity } from './lib/turns/liveActivity';
+import { getLiveFinalMessage, getTurnsWithLaterAssistant, hasLiveActivity } from './lib/turns/liveActivity';
 import type { ChatMessageEntry, TurnRecord, TurnGroupingContext } from './lib/turns/types';
 import { useTurnRecords } from './hooks/useTurnRecords';
 import { applyRetryOverlay } from './lib/turns/applyRetryOverlay';
@@ -298,6 +298,7 @@ const TurnBlock = React.memo(({
         [turn.userMessage]
     );
     const turnUiState = turnUiStates.get(turn.turnId) ?? { isExpanded: defaultActivityExpanded };
+    const activitySettled = Boolean(getLiveFinalMessage(turn.assistantMessages)) || hasLaterAssistant;
     const handleToggleTurnGroup = React.useCallback(() => {
         onToggleTurnGroup(turn.turnId);
     }, [onToggleTurnGroup, turn.turnId]);
@@ -496,6 +497,7 @@ const TurnBlock = React.memo(({
                         index < assistantIndex && filterVisibleParts(assistant.parts).some((part) => part.type === 'text' && !isEmptyTextPart(part))
                     )),
                     isLatestTurn: isLastTurn,
+                    activitySettled,
                     isWorking: isLastTurn && sessionIsWorking && (
                         chatRenderMode === 'sorted'
                             ? hasAnchoredActivitySegment
@@ -557,6 +559,7 @@ const TurnBlock = React.memo(({
             visibleAssistantIds,
             visibleActivitySegments,
             activityOwnerMessageId,
+            activitySettled,
             shouldAnimateUserMessage,
             onUserAnimationConsumed,
             handleToggleTurnGroup,
@@ -1138,13 +1141,12 @@ const MessageList = React.forwardRef<MessageListHandle, MessageListProps>(({
     const hasUngroupedStaticEntries = projection.ungroupedMessageIds.size > 0;
     const tailHasAssistant = Boolean(streamingTurn?.assistantMessages.length);
     const turnsWithLaterAssistant = React.useMemo(() => {
-        if (chatRenderMode !== 'live' || defaultActivityExpanded) return new Set<string>();
         const retired = getTurnsWithLaterAssistant(staticTurns);
         if (tailHasAssistant) {
             for (const turn of staticTurns) retired.add(turn.turnId);
         }
         return retired;
-    }, [chatRenderMode, defaultActivityExpanded, staticTurns, tailHasAssistant]);
+    }, [staticTurns, tailHasAssistant]);
     const staticEntryMessages = hasUngroupedStaticEntries ? displayMessages : EMPTY_STATIC_ENTRY_MESSAGES;
     const staticEntryUngroupedIds = hasUngroupedStaticEntries ? projection.ungroupedMessageIds : EMPTY_UNGROUPED_MESSAGE_IDS;
     const staticRenderEntries = React.useMemo<RenderEntry[]>(() => streamPerfMeasure('ui.message_list.render_entries_ms', () => {
