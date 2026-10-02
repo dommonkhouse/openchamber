@@ -53,6 +53,30 @@ const createApp = ({ routeSend, autoSessions = new Set() } = {}) => {
 };
 
 describe('routing send rewrite', () => {
+  it.each(['/repo', '/repo with spaces', '/repo%2Fname', '/répertoire'])('decodes URI-marked directory headers once for %s', async (directory) => {
+    const { app, runtime } = createApp({ autoSessions: new Set(['s1']) });
+    const headers = { 'x-opencode-directory': encodeURIComponent(directory), 'x-opencode-directory-encoding': 'uri' };
+    await request(app).post('/api/session/s1/model').set(headers)
+      .send({ model: { providerID: 'openchamber', id: 'auto' } }).expect(204);
+    expect(runtime.noteModelSelection).toHaveBeenCalledWith('s1', { providerID: 'openchamber', id: 'auto' }, directory);
+    await request(app).post('/api/session/s1/prompt').set(headers).send({ text: 'hi' }).expect(204);
+    expect(runtime.routeSend).toHaveBeenCalledWith({ sessionId: 's1', directory, body: { text: 'hi' } });
+  });
+
+  it('preserves unmarked headers, malformed escapes, and query precedence', async () => {
+    const { app, runtime } = createApp({ autoSessions: new Set(['s1']) });
+    for (const [header, marker, query, directory] of [
+      ['/repo%2Fname', '', '', '/repo%2Fname'],
+      ['/repo%ZZ', 'uri', '', '/repo%ZZ'],
+      ['%2Fignored', 'uri', '?directory=%2Frepo%252Fname', '/repo%2Fname'],
+    ]) {
+      await request(app).post(`/api/session/s1/prompt${query}`)
+        .set('x-opencode-directory', header).set('x-opencode-directory-encoding', marker)
+        .send({ text: 'hi' }).expect(204);
+      expect(runtime.routeSend).toHaveBeenLastCalledWith({ sessionId: 's1', directory, body: { text: 'hi' } });
+    }
+  });
+
   it('swallows the Auto sentinel on a model switch instead of forwarding it', async () => {
     const { app, runtime, forwarded } = createApp();
     await request(app)

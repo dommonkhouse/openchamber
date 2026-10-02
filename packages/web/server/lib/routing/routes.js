@@ -108,7 +108,17 @@ export function registerRoutingPromptRewrite(app, runtime) {
 
   const directoryOf = (req) => {
     const url = new URL(req.url, 'http://localhost');
-    return url.searchParams.get('directory') || req.get('x-opencode-directory') || undefined;
+    const queryDirectory = url.searchParams.get('directory');
+    if (queryDirectory) return queryDirectory;
+    const directory = req.get('x-opencode-directory');
+    if (directory && req.get('x-opencode-directory-encoding') === 'uri') {
+      try {
+        return decodeURIComponent(directory);
+      } catch {
+        // Match the proxy: preserve malformed escapes rather than guessing a path.
+      }
+    }
+    return directory || undefined;
   };
 
   // Session creation is the other v2 request that carries a model: flows that
