@@ -84,6 +84,7 @@ export const ROUTING_INSTRUCTIONS = [
   'Pick the task category that best describes this coding request, judging the reasoning it demands rather than the length of the reply it asks for.',
   'A request that wants a one-line answer to a hard debugging or design question is still hard; a long but mechanical edit is still trivial.',
   'The thing to classify is `request`, the latest user message. Read `history` (earlier conversation, oldest first) only to understand what `request` refers to, then judge the reasoning `request` itself demands. Do not let the difficulty of work already done in `history` raise or lower the category.',
+  'A short approval such as "yes", "go", or "do it" is not trivial: classify it by the work it approves, as shown in `history`.',
 ];
 
 /**
@@ -129,7 +130,7 @@ export const BUILTIN_CATEGORIES = [
   {
     id: 'implement',
     name: 'Implement',
-    description: 'Ordinary engineering with a clear, bounded shape: implement a well-specified function, endpoint, or component; write or fix tests for existing behaviour; a localised bug fix where the cause is already understood. Not for open-ended architecture, subtle concurrency, or unknown-cause debugging.',
+    description: 'Ordinary engineering with a clear, bounded shape: implement a well-specified function, endpoint, or component; write or fix tests for existing behaviour; a localised bug fix where the cause is already understood; carry out a stated sequence of commands such as committing, pushing, deploying, or restarting services. Not for open-ended architecture, subtle concurrency, or unknown-cause debugging.',
   },
   {
     id: 'hard',
