@@ -50,6 +50,13 @@ export const requestTextOf = (body) => {
     return `/${command.data.name}${args ? ` ${args}` : ''}`;
   }
   const prompt = promptBodySchema.safeParse(body);
+  // The prompt schema strips unknown keys and still succeeds, so a body that
+  // is not a send at all (a v1-shaped `{ parts }` body) parses as an empty
+  // prompt. Classifying that switches the model on history alone for a
+  // request the real handler then rejects. A body with no send key is not a
+  // send; one that merely adds keys (a prompt's `files`) still is.
+  const record = body && typeof body === 'object' ? body : null;
+  if (!record || !('text' in record || 'name' in record)) return null;
   return (prompt.success ? prompt.data.text ?? '' : '').trim();
 };
 
@@ -360,12 +367,16 @@ export function createRoutingRuntime({
    * session onto the answer, and keeps the body in step with it.
    */
   const routeSend = async ({ sessionId, directory, body }) => {
+    const requestText = requestTextOf(body);
+    // Not a prompt or a command: leave it for the real handler to reject,
+    // instead of classifying an empty request and switching the model.
+    if (requestText === null) return null;
     const resolved = await resolveAutoSelection({
       sessionId,
       directory,
       model: AUTO_MODEL_REF,
       agent: agentBodySchema.safeParse(body).data?.agent ?? null,
-      requestText: requestTextOf(body),
+      requestText,
     });
     if (!resolved) return null;
     // v2 prompt and command bodies carry neither model nor agent: switching
