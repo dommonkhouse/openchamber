@@ -7,7 +7,7 @@ import {
   buildAppliedResponse,
 } from './config-mutation-response.js';
 import { getClaudeCliAuthStatus } from './claude-cli-auth.js';
-import { OPENCODE_CONFIG_DIR } from './shared.js';
+import { OPENCODE_CONFIG_DIR, readConfigLayers } from './shared.js';
 import { settingsSurfaceOf } from './settings-files.js';
 import { parseWebSearchSelection } from './config-v2.js';
 import { getWebSearchSource, setWarmingEnabled, setWebSearchSelection } from './websearch-config.js';
@@ -18,6 +18,8 @@ import {
   isEnterpriseMode,
   isProviderConnectRequest,
 } from '../enterprise-mode.js';
+import { discoverProviderModels } from './model-discovery.js';
+import { vcsInitRefusal, vcsInitRefusalBody } from '../git/repository-root.js';
 
 export const registerOpenCodeRoutes = (app, dependencies) => {
   const {
@@ -324,6 +326,13 @@ export const registerOpenCodeRoutes = (app, dependencies) => {
       : next()
   ));
 
+  // `git init` in home or at a disk root makes a repository Git surfaces then
+  // ignore; refuse it here so no client can create one through the proxy.
+  app.use((req, res, next) => {
+    const refusal = vcsInitRefusal(req.method, req.originalUrl, req.headers);
+    return refusal ? res.status(400).json(vcsInitRefusalBody(refusal)) : next();
+  });
+
   app.put('/api/provider', refuseInEnterpriseMode, async (req, res) => {
     try {
       const providerID = typeof req.body?.providerID === 'string'
@@ -380,6 +389,32 @@ export const registerOpenCodeRoutes = (app, dependencies) => {
       const status = typeof error?.statusCode === 'number' ? error.statusCode : 500;
       console.error('Failed to upsert provider config:', error);
       return res.status(status).json({ error: error.message || 'Failed to save provider config' });
+    }
+  });
+
+  app.post('/api/provider/discover-models', refuseInEnterpriseMode, async (req, res) => {
+    try {
+      const providerID = typeof req.body?.providerID === 'string' ? req.body.providerID.trim() : '';
+      // A stored key that cannot be read leaves discovery to the key in the form.
+      let storedApiKey = null;
+      let storedBaseURL;
+      if (providerID) {
+        try {
+          const { getProviderAuth } = await getAuthLibrary();
+          const storedAuth = await getProviderAuth(providerID);
+          storedApiKey = storedAuth?.type === 'api' && typeof storedAuth.key === 'string' ? storedAuth.key : null;
+          storedBaseURL = readConfigLayers().mergedConfig?.provider?.[providerID]?.options?.baseURL;
+        } catch {
+          storedApiKey = null;
+        }
+      }
+      return res.json(await discoverProviderModels(req.body, { storedApiKey, storedBaseURL }));
+    } catch (error) {
+      const status = typeof error?.statusCode === 'number' ? error.statusCode : 500;
+      return res.status(status).json({
+        error: error instanceof Error ? error.message : 'Failed to discover provider models',
+        code: typeof error?.code === 'string' ? error.code : 'discovery_failed',
+      });
     }
   });
 
