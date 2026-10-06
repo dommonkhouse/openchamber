@@ -64,6 +64,21 @@ describe('requestTextOf', () => {
     expect(requestTextOf({ name: 'review', text: '' })).toBe('/review');
     expect(requestTextOf({ name: 'review' })).toBe('/review');
   });
+  it('refuses a body that is neither a prompt nor a command', () => {
+    // A v1-shaped send ({ parts }) matches neither schema. Treating it as an
+    // empty prompt classifies the session on history alone and switches the
+    // model, then the real handler rejects it — a routing decision for a send
+    // that never happened.
+    expect(requestTextOf({ parts: [{ type: 'text', text: 'hello' }] })).toBeNull();
+    expect(requestTextOf({})).toBeNull();
+    expect(requestTextOf(null)).toBeNull();
+  });
+  it('does not classify a body the app cannot deliver', async () => {
+    const { runtime, jev, events } = makeRuntime({ answers: { category: { choice: 'trivial', confidence: 0.99 } } });
+    expect(await runtime.routeSend({ sessionId: 's1', body: { parts: [{ type: 'text', text: 'hello' }] } })).toBeNull();
+    expect(jev.ask).not.toHaveBeenCalled();
+    expect(events).toEqual([]);
+  });
 });
 
 describe('history excerpts', () => {

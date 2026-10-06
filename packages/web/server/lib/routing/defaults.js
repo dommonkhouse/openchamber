@@ -85,6 +85,7 @@ export const ROUTING_INSTRUCTIONS = [
   'A request that wants a one-line answer to a hard debugging or design question is still hard; a long but mechanical edit is still trivial.',
   'The thing to classify is `request`, the latest user message. Read `history` (earlier conversation, oldest first) only to understand what `request` refers to, then judge the reasoning `request` itself demands. Do not let the difficulty of work already done in `history` raise or lower the category.',
   'A short approval such as "yes", "go", or "do it" is not trivial: classify it by the work it approves, as shown in `history`.',
+  'When a request changes files and then ships, syncs, deploys, or restarts the result, it is implement, not trivial — the ship/sync/restart step is part of the work, not a mechanical afterthought.',
 ];
 
 /**

@@ -151,7 +151,7 @@ describe('routing send rewrite', () => {
   });
 
 
-  it('answers with the runtime error instead of forwarding an unroutable send', async () => {
+  it('answers with the runtime error instead of forwarding a send that cannot be routed', async () => {
     const { app, forwarded } = createApp({
       autoSessions: new Set(['s1']),
       routeSend: vi.fn(async () => { throw Object.assign(new Error('no fallback'), { status: 400 }); }),
