@@ -13,6 +13,8 @@ describe('useDraftTarget while a new worktree attaches', () => {
     dom = new Window({ url: 'http://localhost/' });
     Object.assign(globalThis, {
       window: dom,
+      Event: dom.Event,
+      CustomEvent: dom.CustomEvent,
       document: dom.document,
       navigator: dom.navigator,
       localStorage: dom.localStorage,

@@ -4,6 +4,7 @@ import { Window } from 'happy-dom';
 const browser = new Window({ url: 'http://localhost/' });
 Object.assign(globalThis, {
   window: browser, document: browser.document, navigator: browser.navigator,
+  Event: browser.Event, CustomEvent: browser.CustomEvent,
   localStorage: browser.localStorage, sessionStorage: browser.sessionStorage,
 });
 

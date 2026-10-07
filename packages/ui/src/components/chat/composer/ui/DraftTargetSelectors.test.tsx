@@ -15,6 +15,8 @@ const renderBranchSheet = async (onCreateCustomWorktree?: () => void) => {
     const win = new Window({ url: 'http://localhost' });
     const values = {
         window: win,
+        Event: win.Event,
+        CustomEvent: win.CustomEvent,
         document: win.document,
         navigator: win.navigator,
         localStorage: win.localStorage,

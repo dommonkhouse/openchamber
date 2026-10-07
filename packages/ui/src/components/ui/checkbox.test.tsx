@@ -10,6 +10,7 @@ Object.assign(globalThis, {
   HTMLInputElement: browser.HTMLInputElement, HTMLButtonElement: browser.HTMLButtonElement,
   Event: browser.Event, MouseEvent: browser.MouseEvent, PointerEvent: browser.PointerEvent,
   KeyboardEvent: browser.KeyboardEvent, FocusEvent: browser.FocusEvent,
+  MutationObserver: browser.MutationObserver,
   getComputedStyle: browser.getComputedStyle.bind(browser),
   requestAnimationFrame: browser.requestAnimationFrame.bind(browser),
   cancelAnimationFrame: browser.cancelAnimationFrame.bind(browser),
