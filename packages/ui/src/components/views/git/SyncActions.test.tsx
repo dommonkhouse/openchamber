@@ -13,7 +13,7 @@ test('the sync menu offers a pull from the tracking remote and blocks it over tr
     window: dom, document: dom.document, navigator: dom.navigator,
     Element: dom.Element, HTMLElement: dom.HTMLElement, Node: dom.Node,
     Event: dom.Event, MouseEvent: dom.MouseEvent, KeyboardEvent: dom.KeyboardEvent,
-    ResizeObserver: dom.ResizeObserver, getComputedStyle: dom.getComputedStyle.bind(dom),
+    ResizeObserver: dom.ResizeObserver, MutationObserver: dom.MutationObserver, getComputedStyle: dom.getComputedStyle.bind(dom),
     requestAnimationFrame: dom.requestAnimationFrame.bind(dom), cancelAnimationFrame: dom.cancelAnimationFrame.bind(dom),
     IS_REACT_ACT_ENVIRONMENT: true,
   })) {
