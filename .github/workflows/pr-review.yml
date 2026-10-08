@@ -19,9 +19,11 @@ jobs:
   review:
     name: automation
     if: |
+      github.repository == 'openchamber/openchamber' && (
       github.event_name == 'pull_request_target' ||
       (github.event_name == 'issue_comment' && github.event.issue.pull_request && github.event.comment.user.login != 'openchamber-bot[bot]' && (github.event.comment.body == '/oc-review' || startsWith(github.event.comment.body, '/oc-review ') || github.event.comment.body == '@openchamber-bot review' || startsWith(github.event.comment.body, '@openchamber-bot review '))) ||
       (github.event_name == 'pull_request_review_comment' && github.event.comment.user.login != 'openchamber-bot[bot]' && (github.event.comment.body == '/oc-review' || startsWith(github.event.comment.body, '/oc-review ') || github.event.comment.body == '@openchamber-bot review' || startsWith(github.event.comment.body, '@openchamber-bot review ')))
+      )
     runs-on: ubuntu-latest
     permissions:
       contents: read
