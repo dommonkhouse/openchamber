@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -795,16 +795,21 @@ describe('compatibility exports', () => {
   });
 
   it('includes ngrok in fallback tunnel providers when no server is reachable', async () => {
-    await withTempOpenChamberDataDir(async () => {
-      const port = await allocateLoopbackPort();
-      const output = await captureStdout(async () => {
-        await commands.tunnel({ json: true, explicitPort: true, port }, 'providers');
-      });
+    const fetch = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('fetch failed'));
+    try {
+      await withTempOpenChamberDataDir(async () => {
+        const port = await allocateLoopbackPort();
+        const output = await captureStdout(async () => {
+          await commands.tunnel({ json: true, explicitPort: true, port }, 'providers');
+        });
 
-      const body = JSON.parse(output);
-      expect(body.source).toBe('fallback');
-      expect(body.providers.map((entry) => entry.provider)).toContain('ngrok');
-    });
+        const body = JSON.parse(output);
+        expect(body.source).toBe('fallback');
+        expect(body.providers.map((entry) => entry.provider)).toContain('ngrok');
+      });
+    } finally {
+      fetch.mockRestore();
+    }
   });
 
   it('supports ngrok quick dry-run with an explicit port', async () => {

@@ -23,7 +23,7 @@ describe('OpenChamberVisualSettings', () => {
   let initialLargeTextPasteBehavior: ReturnType<typeof useUIStore.getState>['largeTextPasteBehavior'];
   let globalDescriptors: Map<string, PropertyDescriptor | undefined>;
 
-  const globalNames = ['window', 'document', 'HTMLElement', 'Element', 'Node', 'localStorage', 'sessionStorage', 'IS_REACT_ACT_ENVIRONMENT'];
+  const globalNames = ['window', 'document', 'HTMLElement', 'Element', 'Node', 'Event', 'CustomEvent', 'MutationObserver', 'requestAnimationFrame', 'cancelAnimationFrame', 'localStorage', 'sessionStorage', 'IS_REACT_ACT_ENVIRONMENT'];
 
   beforeEach(() => {
     windowInstance = new Window();
@@ -36,6 +36,11 @@ describe('OpenChamberVisualSettings', () => {
       HTMLElement: windowInstance.HTMLElement,
       Element: windowInstance.Element,
       Node: windowInstance.Node,
+      Event: windowInstance.Event,
+      CustomEvent: windowInstance.CustomEvent,
+      MutationObserver: windowInstance.MutationObserver,
+      requestAnimationFrame: windowInstance.requestAnimationFrame.bind(windowInstance),
+      cancelAnimationFrame: windowInstance.cancelAnimationFrame.bind(windowInstance),
       localStorage: windowInstance.localStorage,
       sessionStorage: windowInstance.sessionStorage,
       IS_REACT_ACT_ENVIRONMENT: true,
