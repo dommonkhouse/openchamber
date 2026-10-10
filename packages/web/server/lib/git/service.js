@@ -1,4 +1,4 @@
-import simpleGit from 'simple-git';
+import { simpleGit } from 'simple-git';
 import { createSerialRefresh } from './serial-refresh.js';
 import { stripAppImageLauncherEnv } from '../inherited-env.js';
 import fs from 'fs';
@@ -377,6 +377,14 @@ const buildGitEnv = async () => {
   // Git runs the user's hooks, so they must not see what the AppImage launcher
   // added to LD_LIBRARY_PATH and friends (#4177).
   const env = stripAppImageLauncherEnv({ ...process.env });
+  // simple-git v4 rejects guarded keys supplied through .env(); anything
+  // inherited here would count as supplied, so drop them at the source.
+  // Only the allowlisted infrastructure keys survive the strip.
+  for (const key of Object.keys(env)) {
+    if (guardedGitEnvKeys(key) && !allowEnvironment.includes(key.toLowerCase())) {
+      delete env[key];
+    }
+  }
   if (process.platform === 'win32') {
     // Node already passes an argument array. MSYS globbing corrupts Git refs
     // such as HEAD^{commit} and branch@{upstream} before Git sees them.
@@ -397,30 +405,26 @@ const buildGitEnv = async () => {
   return env;
 };
 
-// simple-git refuses every command whose env holds a variable that runs a
-// program (EDITOR, PAGER, GIT_SSH_COMMAND, GIT_ASKPASS, ...) unless its unsafe
-// category is enabled, and the same categories also guard -c and other
-// arguments, so enabling them would weaken argument protection. A variable the
-// server's own environment passes through unchanged is what git would inherit
-// without an env anyway, so it goes on the prototype: simple-git's check copies
-// only own keys, while child_process.spawn passes inherited keys to the child.
-// Whatever OpenChamber sets or changes stays an own key and is still checked.
-const toSimpleGitEnv = (env) => {
-  const passedThrough = {};
-  const changed = {};
-  for (const [key, value] of Object.entries(env)) {
-    if (process.env[key] === value) {
-      passedThrough[key] = value;
-    } else {
-      changed[key] = value;
-    }
-  }
-  return Object.assign(Object.create(passedThrough), changed);
+// simple-git v4 rejects any guarded variable that reaches .env() —
+// including keys merely inherited from the server's own environment, since
+// buildGitEnv starts from process.env. Guarded keys are exactly the ones
+// that can run a program or rewrite configuration (EDITOR, PAGER,
+// GIT_SSH_COMMAND, GIT_ASKPASS, GIT_CONFIG*, GIT_INDEX_FILE, ...), and
+// transport is owned by repository bindings and the credential broker, so
+// they are stripped here rather than allowed through. The three keys below
+// are OpenChamber-owned infrastructure values git requires to behave as
+// configured, and simple-git's allowEnvironment re-permits them after the
+// guard runs.
+const guardedGitEnvKeys = (key) => {
+  const normalised = key.toLowerCase();
+  return normalised.startsWith('git_')
+    || ['editor', 'pager', 'prefix', 'ssh_askpass', 'visual'].includes(normalised);
 };
-
-// Transport configuration is owned by repository bindings and the credential
-// broker, so no caller needs simple-git's unsafe SSH-command or
-// credential-helper escapes any more.
+const allowEnvironment = [
+  'git_terminal_prompt',
+  'git_index_file',
+  'git_literal_pathspecs',
+];
 const createGit = async (directory, { stallTimeoutMs = 0 } = {}) => {
   const env = await buildGitEnv();
   const spawnOptions = { windowsHide: true };
@@ -446,8 +450,9 @@ const createGit = async (directory, { stallTimeoutMs = 0 } = {}) => {
     spawnOptions,
     binary,
     unsafe,
+    allowEnvironment,
     ...(timeout ? { timeout } : {}),
-  }).env(toSimpleGitEnv(env));
+  }).env(env);
 };
 
 // Global config reads do not need a repository; use the home directory as a
