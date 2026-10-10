@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import simpleGit from 'simple-git';
+import { simpleGit } from 'simple-git';
 import { createWorktreeBootstrapStore } from './worktree-bootstrap-storage.js';
 import { loadSourceSections, parseSource, sourceKey } from '../walkthrough/sources.js';
 import { registerGitRoutes } from './routes.js';
@@ -5217,7 +5217,7 @@ describe('git environment through simple-git', () => {
     });
   });
 
-  it('keeps working, and passes them to git, when the process env sets editor, pager, ssh or askpass programs', async () => {
+  it('strips editor, pager, ssh and askpass programs inherited from the process env', async () => {
     if (!canRunGit() || process.platform === 'win32') return;
     const programs = {
       EDITOR: 'vim',
@@ -5228,12 +5228,14 @@ describe('git environment through simple-git', () => {
       GIT_ASKPASS: '/usr/bin/true',
       SSH_ASKPASS: '/usr/bin/true',
     };
-    // Git itself hands hooks GIT_EDITOR=: when a commit message needs no editor.
-    const observed = Object.keys(programs).filter((name) => name !== 'GIT_EDITOR');
     await withProcessEnv(programs, async () => {
-      const { repo, readHookLog } = createRepositoryLoggingHookEnv(observed);
+      const { repo, readHookLog } = createRepositoryLoggingHookEnv(Object.keys(programs));
       await commit(repo, 'init', { addAll: true });
-      expect(readHookLog()).toBe(observed.map((name) => programs[name]).join('|'));
+      // simple-git v4 strips guarded variables inherited from the outer
+      // environment: transport is owned by the credential broker, so ambient
+      // editor/pager/askpass settings must not reach git. git itself hands
+      // hooks GIT_EDITOR=: so editors never launch mid-hook.
+      expect(readHookLog()).toBe(Object.keys(programs).map((name) => (name === 'GIT_EDITOR' ? ':' : '<unset>')).join('|'));
       const status = await getStatus(repo);
       expect(status.current).toBe('main');
     });
