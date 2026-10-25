@@ -1,0 +1,25 @@
+{
+  "childSession": { "id": "ses_e8d754023ffeVHnawXyqBr5hWG", "parentID": "ses_e8d75408effeKe5Da8qR5g5voD" },
+  "parentOwner": { "sessionID": "ses_e8d75408effeKe5Da8qR5g5voD", "messageID": "msg_1728abfb20017EwQABACZl3ODV" },
+  "childOwner": { "sessionID": "ses_e8d754023ffeVHnawXyqBr5hWG", "messageID": "msg_1728ac018001uRU8Jl3SHhNdMS" },
+  "parent": {
+    "type": "tool", "id": "call_synthetic_parent", "name": "subagent",
+    "time": { "created": 1792923058119, "ran": 1792923058120, "completed": 1792923058314 }, "executed": false,
+    "state": { "status": "error", "input": {},
+      "error": { "type": "tool.execution", "message": "Subagent failed (sessionID: ses_e8d754023ffeVHnawXyqBr5hWG): Synthetic child failure" },
+      "metadata": { "sessionID": "ses_e8d754023ffeVHnawXyqBr5hWG", "status": "running" }
+    }
+  },
+  "child": {
+    "type": "tool", "id": "call_synthetic_child", "name": "write",
+    "time": { "created": 1792923058219, "ran": 1792923058220, "completed": 1792923058245 }, "executed": false,
+    "state": { "status": "error", "input": {},
+      "error": { "type": "tool.execution", "message": "Synthetic carrier refusal" },
+      "metadata": { "failureAttribution": {
+        "version": 1, "id": "3960391a-7e82-4eda-b7b7-a92502d7df93", "time": "2026-10-25T10:10:58.245Z",
+        "gate": "worktree-boundary-gate.sh", "code": "permissionDecision-deny", "source": "unclassified", "kind": "policy-denial",
+        "inputPresent": true, "inputType": "object", "sessionID": "ses_e8d754023ffeVHnawXyqBr5hWG", "toolCallID": "call_synthetic_child", "tool": "write"
+      } }
+    }
+  }
+}

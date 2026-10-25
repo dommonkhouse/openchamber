@@ -3,6 +3,8 @@ import React from 'react';
 import { useMobileAppActions } from '@/apps/mobileAppContext';
 import { RuntimeAPIContext } from '@/contexts/runtimeAPIContext';
 import { cn } from '@/lib/utils';
+import { failureLabel, readToolFailureAttribution } from '@/lib/opencode/failureAttribution';
+import { FailureAttributionLabel } from '../../FailureAttributionLabel';
 import { SimpleMarkdownRenderer } from '../../MarkdownRenderer';
 import { BlockLine } from './BlockLine';
 import { FormMarkdown } from '../../FormMarkdown';
@@ -1309,6 +1311,7 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
                             color: 'var(--status-error)',
                         }}>
                             {coerceToText(state.error)}
+                            <FailureAttributionLabel label={failureLabel(readToolFailureAttribution(part))} />
                         </div>
                     </div>
                 );
@@ -1559,6 +1562,7 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
                                 color: 'var(--status-error)',
                             }}>
                                 {coerceToText(state.error)}
+                                <FailureAttributionLabel label={failureLabel(readToolFailureAttribution(part))} />
                             </div>
                         </div>
                     )}
@@ -1753,6 +1757,7 @@ const ToolPartContent: React.FC<ToolPartProps & { header?: ToolRowHeader; subage
 
     // Opened, the body already carries the whole error and output.
     const failureDetail = isError && !isExpanded ? failureReason : undefined;
+    const attributionLabel = isError && !isExpanded ? failureLabel(readToolFailureAttribution(part)) : null;
 
     // Tool title/description — shown inline as context. A subtitle the
     // extension declared replaces it, since both land in the same slot.
@@ -2123,6 +2128,7 @@ const ToolPartContent: React.FC<ToolPartProps & { header?: ToolRowHeader; subage
                     </div>
                 )}
             </div>
+            {!isExpanded && attributionLabel ? <FailureAttributionLabel label={attributionLabel} /> : null}
 
             <div
                 ref={expandedContentRef}

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { ErrorResponseDetails } from '@/components/chat/ErrorResponseDetails';
 import { useI18n } from '@/lib/i18n';
 import { showOpenCodeStatus } from '@/lib/openCodeStatus';
+import { failureLabel, findTurnFailureAttribution } from '@/lib/opencode/failureAttribution';
 import { DiagnosticDialogAvailableContext } from '@/lib/diagnostics/dialog-availability';
 import { getLastConversationMessage, type Message, type Part, type Session, type StructuredError } from '@/lib/opencode/model';
 import { useLatestSessionError } from '@/sync/notification-store';
@@ -11,6 +12,7 @@ import { responseBodyOf, summarizeOpenCodeError } from '@/sync/session-error-log
 import { useDirectoryStore, useSessionStatus, useSessionStatusSnapshotReady } from '@/sync/sync-context';
 import { refetchSessionMessages } from '@/sync/session-actions';
 import { LongErrorText } from './LongErrorText';
+import { FailureAttributionLabel } from './FailureAttributionLabel';
 import { findRecordedTurnError, readLastMessageState, scheduleUnansweredRechecks, type LastMessageState } from './sessionErrorNoticeState';
 
 interface SessionErrorNoticeProps {
@@ -37,6 +39,7 @@ type StoredFailure = {
   outcome: Session['outcome'];
   recordedError: StructuredError | null;
   parentToolError: string | null;
+  attributionLabel: string | null;
 } | null;
 
 const isFailedOutcome = (outcome: Session['outcome']): boolean => outcome === 'failed' || outcome === 'interrupted';
@@ -77,6 +80,7 @@ const useStoredFailure = (sessionId: string, directory?: string): StoredFailure 
       outcome: session.outcome,
       recordedError: findRecordedTurnError(state.message[sessionId]),
       parentToolError: findParentToolError(parent, state.message, state.part, sessionId),
+      attributionLabel: failureLabel(findTurnFailureAttribution(state.message[sessionId], state.part, state.message, state.session), findRecordedTurnError(state.message[sessionId])),
     };
     const cached = cacheRef.current;
     if (
@@ -84,6 +88,7 @@ const useStoredFailure = (sessionId: string, directory?: string): StoredFailure 
       && cached.outcome === next.outcome
       && cached.recordedError === next.recordedError
       && cached.parentToolError === next.parentToolError
+      && cached.attributionLabel === next.attributionLabel
     ) return cached;
     cacheRef.current = next;
     return next;
@@ -231,6 +236,11 @@ export const SessionErrorNotice: React.FC<SessionErrorNoticeProps> = ({ sessionI
           <Icon name="error-warning" className="size-3.5 shrink-0 text-[var(--status-error)]" />
           <span className="typography-meta font-medium text-foreground">{title}</span>
         </div>
+        {storedFailure?.attributionLabel && (reportedError || storedFailureApplies) ? (
+          <div className="ps-[1.375rem]">
+            <FailureAttributionLabel label={storedFailure.attributionLabel} />
+          </div>
+        ) : null}
         <LongErrorText text={detail} buttonClassName="ms-[0.875rem]">
           {(visibleText) => (
             <div className="mt-1 ps-[1.375rem] typography-meta text-muted-foreground break-words">{visibleText}</div>
